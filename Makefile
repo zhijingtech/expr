@@ -15,7 +15,7 @@ all: fmt lint build test
 .PHONY: lint
 lint:
 	@echo "[golangci-lint] Running golangci-lint..."
-	@#go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.0
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.0
 	@golangci-lint run ./...
 	@go mod tidy
 	@echo "`date +"%Y-%m-%d %H:%M:%S"` ------------------------------------[Done]"
