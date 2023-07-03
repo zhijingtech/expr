@@ -9,3 +9,21 @@ expr 是基于 github.com/google/cel-go 再次封装的表达式解析和执行�
 待实现的特性：
 - 表达式解析支持自定义函数
 - 表达式执行出参支持自定义解析器
+
+## 用法
+
+```go
+	expr, err := NewExpr("this.value > 60", ThisVariable())
+	if err != nil {
+		panic(err)
+	}
+
+	result, err := expr.Eval(map[string]any{"this": map[string]any{"value": 50}})
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("result:", result)
+	// result: false
+```

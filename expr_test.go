@@ -21,14 +21,14 @@ func TestExpr_Eval(t *testing.T) {
 		{
 			name:       "expr on map return true",
 			expression: "this.value == 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			input:      map[string]any{"this": map[string]any{"value": 1}},
 			want:       true,
 		},
 		{
 			name:       "expr on map return false",
 			expression: "this.value == 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			input:      map[string]any{"this": map[string]any{"value": 2}},
 			want:       false,
 		},
@@ -88,13 +88,13 @@ func TestExpr_NewExpr_Err(t *testing.T) {
 		{
 			name:       "variable not exist",
 			expression: "dummy == 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:1: undeclared reference to 'dummy' (in container '')\n | dummy == 1\n | ^",
 		},
 		{
 			name:       "expr wrong",
 			expression: "dummy === 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:9: Syntax error: token recognition error at: '= '\n | dummy === 1\n | ........^",
 		},
 	}
@@ -118,14 +118,14 @@ func TestExpr_Eval_Err(t *testing.T) {
 		{
 			name:       "this not exist",
 			expression: "this.dummy == 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			input:      map[string]any{},
 			wantErr:    "no such attribute(s): this",
 		},
 		{
 			name:       "variable not exist",
 			expression: "this.dummy == 1",
-			options:    []Option{ThisVariable()},
+			options:    []Option{UseThisVariable()},
 			input:      map[string]any{"this": map[string]any{"value": 1}},
 			wantErr:    "no such key: dummy",
 		},

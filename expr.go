@@ -11,8 +11,8 @@ type Expr struct {
 	program cel.Program
 }
 
-// ThisVariable 注册map类型的this变量，方便map入参的操作
-func ThisVariable() Option {
+// UseThisVariable 注册map类型的this变量，方便在表达式中操作this数据
+func UseThisVariable() Option {
 	return cel.Variable("this", cel.MapType(cel.StringType, cel.AnyType))
 }
 
