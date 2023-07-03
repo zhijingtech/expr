@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package testdata;
+
+option go_package = "./testdata";
+
+message Point {
+  double X = 1;
+  double Y = 2;
+}
+
+message Rectangle {
+  Point P1 = 1;
+  Point P2 = 2;
+}

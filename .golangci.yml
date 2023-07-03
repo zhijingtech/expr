@@ -1,0 +1,130 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  forbidigo:
+    # Forbid the following identifiers (list of regexp).
+    # Default: ["^(fmt\\.Print(|f|ln)|print|println)$"]
+    forbid:
+      - '^(fmt\.(Print|Error)(|f|ln)|print|println)$'
+    # Exclude godoc examples from forbidigo checks.
+    # Default: true
+    # exclude_godoc_examples: false
+  dupl:
+    threshold: 100
+  funlen:
+    lines: 100
+    statements: 50
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: "gitlab.szzhijing.com"
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(gitlab.szzhijing.com) # Custom section: groups all imports with the specified Prefix.
+      # - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+      # - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+  gomnd:
+    # don't include the "operation" and "assign"
+    checks:
+      - argument
+      - case
+      - condition
+      - return
+    ignored-numbers:
+      - "0"
+      - "1"
+      - "2"
+      - "3"
+    ignored-functions:
+      - strings.SplitN
+
+  # govet:
+    # check-shadowing: true ## TODO: 启用
+
+  lll:
+    line-length: 200
+  misspell:
+    locale: US
+  nolintlint:
+    allow-unused: false # report any unused nolint directives
+    require-explanation: false # don't require an explanation for nolint directives
+    require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - depguard
+    - dogsled
+    # - dupl ## TODO: 启用
+    - errcheck
+    - exportloopref
+    # - funlen ## TODO: 启用
+    # - gochecknoinits
+    # - goconst  ## TODO: 启用
+    # - gocritic  ## TODO: 启用
+    # - gocyclo ## TODO: 启用
+    - gofmt
+    - goimports
+    # - gomnd ## TODO: 启用
+    - goprintffuncname
+    # - gosec ## TODO: 启用
+    - gosimple
+    - govet
+    - ineffassign
+    # - lll ## TODO: 启用
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    # more
+    - revive
+    - gci
+    - errorlint
+    - forbidigo
+    - forcetypeassert
+    # - errchkjson ## TODO: 启用
+    # - goerr113 ## TODO: 启用
+    # - tagliatelle  ## TODO: 启用
+    # - wrapcheck ## TODO: 启用
+
+issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gomnd
+
+run:
+  timeout: 5m
+  tests: false
+  go: "1.17" # TODO(ldez): we force to use an old version of Go for the CI and the tests.
+  skip-dirs:
+    - test
+    - docs
+    - cmd/gen
+    - util/template/otpl
