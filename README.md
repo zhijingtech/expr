@@ -27,3 +27,7 @@ expr 是基于 github.com/google/cel-go 再次封装的表达式解析和执行�
 	fmt.Println("result:", result)
 	// result: false
 ```
+
+## 欢迎贡献
+
+项目刚拉起，欢迎向 https://github.com/zhijingtech/expr 提交问题或者PR。
