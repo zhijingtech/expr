@@ -1,4 +1,4 @@
-package main
+package expr
 
 import (
 	"github.com/google/cel-go/cel"
