@@ -33,3 +33,15 @@ func Variable(name string, t *Type) Option {
 func ObjectType(typeName string) *Type {
 	return cel.ObjectType(typeName)
 }
+
+func ListType(elemType *Type) *Type {
+	return cel.ListType(elemType)
+}
+
+func MapType(keyType, valueType *Type) *Type {
+	return cel.MapType(keyType, valueType)
+}
+
+func NullableType(wrapped *Type) *Type {
+	return cel.NullableType(wrapped)
+}
