@@ -4,9 +4,6 @@ import (
 	"github.com/google/cel-go/cel"
 )
 
-type Type = cel.Type
-type Option = cel.EnvOption
-
 type Expr struct {
 	program cel.Program
 }

@@ -16,7 +16,6 @@ func TestExpr_Eval(t *testing.T) {
 		options    []Option
 		input      any
 		want       any
-		wantErr    bool
 	}{
 		{
 			name:       "expr on map return true",
@@ -58,19 +57,52 @@ func TestExpr_Eval(t *testing.T) {
 			}},
 			want: false,
 		},
+		// 自定义函数
+		{
+			name:       "expr custom function",
+			expression: "distance(this.X, this.Y) < 1.0",
+			options: []Option{
+				UseThisVariable(),
+				Function("distance",
+					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
+						d1 := arg1.(Double)
+						d2 := arg2.(Double)
+						dis := d1 - d2
+						if dis >= 0.0 {
+							return Double(dis)
+						} else {
+							return Double(-dis)
+						}
+					})))},
+			input: map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
+			want:  true,
+		},
+		{
+			name:       "expr custom function -2",
+			expression: "distance(this.X, this.Y) > 1.0",
+			options: []Option{
+				UseThisVariable(),
+				Function("distance",
+					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
+						d1 := arg1.(Double)
+						d2 := arg2.(Double)
+						dis := d1 - d2
+						if dis < 0.0 {
+							dis = -dis
+						}
+						return Double(dis)
+					})))},
+			input: map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
+			want:  false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e, err := NewExpr(tt.expression, tt.options...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Expr.NewExpr() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			assert.NoError(t, err)
 			got, err := e.Eval(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Expr.Eval() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			assert.NoError(t, err)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Expr.Eval() = %v, want %v", got, tt.want)
 			}
@@ -96,6 +128,13 @@ func TestExpr_NewExpr_Err(t *testing.T) {
 			expression: "dummy === 1",
 			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:9: Syntax error: token recognition error at: '= '\n | dummy === 1\n | ........^",
+		},
+		// 自定义函数
+		{
+			name:       "function not exist",
+			expression: "dummy(this.A)",
+			options:    []Option{UseThisVariable()},
+			wantErr:    "ERROR: <input>:1:6: undeclared reference to 'dummy' (in container '')\n | dummy(this.A)\n | .....^",
 		},
 	}
 	for _, tt := range tests {

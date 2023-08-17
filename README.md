@@ -12,6 +12,7 @@ expr 是基于 github.com/google/cel-go 再次封装的表达式解析和执行�
 
 ## 用法
 
+简单用法举例：
 ```go
 	expr, err := NewExpr("this.value > 60", ThisVariable())
 	if err != nil {
@@ -28,6 +29,33 @@ expr 是基于 github.com/google/cel-go 再次封装的表达式解析和执行�
 	// result: false
 ```
 
+自定义函数用法举例：
+```go
+expr, err := NewExpr("shake_hands(i,you)",
+		Variable("i", StringType),
+		Variable("you", StringType),
+		Function("shake_hands",
+			Overload("shake_hands_string_string", []*Type{StringType, StringType}, StringType,
+				BinaryBinding(func(arg1, arg2 Val) Val {
+					return String(fmt.Sprintf("%v and %v are shaking hands.\n", arg1, arg2))
+				}),
+			),
+		))
+	if err != nil {
+		panic(err)
+	}
+
+	result, err := expr.Eval(map[string]any{
+		"i":   "CEL",
+		"you": func() Val { return String("world") },
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("result:", result)
+	// result: CEL and world are shaking hands.
+```
 ## 欢迎贡献
 
 项目刚拉起，欢迎向 https://github.com/zhijingtech/expr 提交问题或者PR。
