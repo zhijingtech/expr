@@ -22,6 +22,14 @@ var (
 type Type = cel.Type
 type Option = cel.EnvOption
 
+func Types(addTypes ...any) Option {
+	return cel.Types(addTypes...)
+}
+
 func Variable(name string, t *Type) Option {
 	return cel.Variable(name, t)
+}
+
+func ObjectType(typeName string) *Type {
+	return cel.ObjectType(typeName)
 }

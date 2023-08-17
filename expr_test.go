@@ -4,10 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
 	"github.com/zhijingtech/expr/testdata"
 )
+
+type mapped map[string]any
 
 func TestExpr_Eval(t *testing.T) {
 	tests := []struct {
@@ -35,8 +36,8 @@ func TestExpr_Eval(t *testing.T) {
 			name:       "expr on struct return true",
 			expression: "(this.P2.X-this.P1.X) > 1.0",
 			options: []Option{
-				cel.Types(&testdata.Rectangle{}),
-				cel.Variable("this", cel.ObjectType("testdata.Rectangle")),
+				Types(&testdata.Rectangle{}),
+				Variable("this", ObjectType("testdata.Rectangle")),
 			},
 			input: map[string]any{"this": &testdata.Rectangle{
 				P1: &testdata.Point{X: 1, Y: 2},
@@ -48,12 +49,22 @@ func TestExpr_Eval(t *testing.T) {
 			name:       "expr on struct return false",
 			expression: "(this.P2.X-this.P1.X) < 1.0",
 			options: []Option{
-				cel.Types(&testdata.Rectangle{}),
-				cel.Variable("this", cel.ObjectType("testdata.Rectangle")),
+				Types(&testdata.Rectangle{}),
+				Variable("this", ObjectType("testdata.Rectangle")),
 			},
 			input: map[string]any{"this": &testdata.Rectangle{
 				P1: &testdata.Point{X: 1, Y: 2},
 				P2: &testdata.Point{X: 3, Y: 4},
+			}},
+			want: false,
+		},
+		{
+			name:       "expr on struct return false",
+			expression: "(this.P2.X-this.P1.X) < 1.0",
+			options:    []Option{UseThisVariable()},
+			input: map[string]any{"this": mapped{
+				"P1": mapped{"X": 1, "Y": 2},
+				"P2": mapped{"X": 3, "Y": 4},
 			}},
 			want: false,
 		},
