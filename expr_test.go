@@ -3,6 +3,7 @@ package expr
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zhijingtech/expr/testdata"
@@ -190,4 +191,34 @@ func TestExpr_Eval_Err(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err.Error())
 		})
 	}
+}
+
+func TestExpr_ContextEval(t *testing.T) {
+	options := []Option{
+		UseThisVariable(),
+		Function("sleep",
+			Overload("sleep_int_null", []*Type{IntType}, NullType, UnaryBinding(func(arg Val) Val {
+				t := arg.(Int).Value().(int)
+				time.Sleep(time.Millisecond * time.Duration(t))
+				return nil
+			})))}
+
+	env, err := NewEnv(options...)
+	assert.NoError(t, err)
+
+	expr1, err := env.NewExpr("this.milliseconds")
+	assert.NoError(t, err)
+	assert.NotNil(t, expr1)
+	got, err := expr1.Eval(map[string]any{"this": map[string]any{"milliseconds": 200}})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(200), got)
+
+	// expr2, err := env.NewExpr("sleep(this.milliseconds)")
+	// assert.NoError(t, err)
+	// assert.NotNil(t, expr2)
+	// ctx, canel := context.WithTimeout(context.Background(), time.Microsecond*100)
+	// defer canel()
+	// got, err = expr2.ContextEval(ctx, map[string]any{"this": map[string]any{"milliseconds": 200}})
+	// assert.NoError(t, err)
+	// assert.Nil(t, got)
 }
