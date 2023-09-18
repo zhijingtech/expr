@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -90,7 +91,7 @@ func TestExpr_Eval(t *testing.T) {
 			want:  true,
 		},
 		{
-			name:       "expr custom function -2",
+			name:       "expr custom function 2",
 			expression: "distance(this.X, this.Y) > 1.0",
 			options: []Option{
 				UseThisVariable(),
@@ -106,6 +107,30 @@ func TestExpr_Eval(t *testing.T) {
 					})))},
 			input: map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
 			want:  false,
+		},
+		{
+			name:       "expr custom function 3",
+			expression: "this.P1.dis_x(this.P2) > 1.0",
+			options: []Option{
+				Types(&testdata.Rectangle{}),
+				Variable("this", ObjectType("testdata.Rectangle")),
+				Function("dis_x",
+					MemberOverload("point_dis_point_double", []*Type{ObjectType("testdata.Point"), ObjectType("testdata.Point")}, DoubleType,
+						BinaryBinding(func(lhs, rhs Val) Val {
+							p1, _ := lhs.Value().(*testdata.Point)
+							p2, _ := rhs.Value().(*testdata.Point)
+							return Double(math.Abs(p1.X - p2.X))
+						},
+						)),
+				),
+			},
+			input: map[string]any{
+				"this": &testdata.Rectangle{
+					P1: &testdata.Point{X: 1, Y: 2},
+					P2: &testdata.Point{X: 3, Y: 4},
+				},
+			},
+			want: true,
 		},
 	}
 

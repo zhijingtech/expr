@@ -39,6 +39,10 @@ func Overload(overloadID string, args []*Type, resultType *Type, opts ...cel.Ove
 	return cel.Overload(overloadID, args, resultType, opts...)
 }
 
+func MemberOverload(overloadID string, args []*Type, resultType *Type, opts ...cel.OverloadOpt) cel.FunctionOpt {
+	return cel.MemberOverload(overloadID, args, resultType, opts...)
+}
+
 func Function(name string, opts ...cel.FunctionOpt) Option {
 	return cel.Function(name, opts...)
 }
