@@ -23,6 +23,18 @@ type Duration = types.Duration
 type Unknown = types.Unknown
 type Error = types.Error
 
+func NewErr(format string, args ...any) Val {
+	return types.NewErr(format, args...)
+}
+
+func WrapErr(err error) Val {
+	return types.WrapErr(err)
+}
+
+func ValOrErr(val Val, format string, args ...any) Val {
+	return types.ValOrErr(val, format, args...)
+}
+
 func UnaryBinding(binding UnaryOp) cel.OverloadOpt {
 	return cel.UnaryBinding(binding)
 }

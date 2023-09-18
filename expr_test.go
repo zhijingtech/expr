@@ -2,7 +2,6 @@ package expr
 
 import (
 	"math"
-	"reflect"
 	"testing"
 	"time"
 
@@ -19,6 +18,7 @@ func TestExpr_Eval(t *testing.T) {
 		options    []Option
 		input      any
 		want       any
+		wantErr    string
 	}{
 		{
 			name:       "expr on map return true",
@@ -109,6 +109,32 @@ func TestExpr_Eval(t *testing.T) {
 			want:  false,
 		},
 		{
+			name:       "expr custom function panic",
+			expression: "distance(this.X, this.Y) > 1.0",
+			options: []Option{
+				UseThisVariable(),
+				Function("distance",
+					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
+						panic("this is panic")
+					})))},
+			input:   map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
+			want:    false,
+			wantErr: "internal error: this is panic",
+		},
+		{
+			name:       "expr custom function error",
+			expression: "distance(this.X, this.Y) > 1.0",
+			options: []Option{
+				UseThisVariable(),
+				Function("distance",
+					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
+						return NewErr("this is error")
+					})))},
+			input:   map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
+			want:    false,
+			wantErr: "this is error",
+		},
+		{
 			name:       "expr custom function 3",
 			expression: "this.P1.dis_x(this.P2) > 1.0",
 			options: []Option{
@@ -139,9 +165,12 @@ func TestExpr_Eval(t *testing.T) {
 			e, err := NewExpr(tt.expression, tt.options...)
 			assert.NoError(t, err)
 			got, err := e.Eval(tt.input)
-			assert.NoError(t, err)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Expr.Eval() = %v, want %v", got, tt.want)
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			} else {
+				assert.EqualError(t, err, tt.wantErr)
+				assert.Nil(t, got)
 			}
 		})
 	}
