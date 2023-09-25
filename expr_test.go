@@ -158,6 +158,20 @@ func TestExpr_Eval(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name:       "expr on array",
+			expression: "len(this.items) > 1",
+			options: []Option{
+				UseThisVariable(),
+				Function("len",
+					Overload("len_Point_Int", []*Type{ListType(AnyType)}, IntType,
+						UnaryBinding(func(arg Val) Val {
+							v, _ := arg.Value().([]*testdata.Point)
+							return Int(len(v))
+						})))},
+			input: map[string]any{"this": map[string]any{"items": []*testdata.Point{{X: 1, Y: 2}, {X: 3, Y: 4}}}},
+			want:  true,
+		},
 	}
 
 	for _, tt := range tests {
