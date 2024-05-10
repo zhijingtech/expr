@@ -290,3 +290,43 @@ func TestExpr_ContextEval(t *testing.T) {
 	// assert.NoError(t, err)
 	// assert.Nil(t, got)
 }
+
+func TestEnv_Extend(t *testing.T) {
+	env, err := NewEnv()
+	assert.NoError(t, err)
+	assert.NotNil(t, env)
+
+	// 未注册Variable和Function，基础计算
+	expr, err := env.NewExpr("1 + 2")
+	assert.NoError(t, err)
+	assert.NotNil(t, expr)
+	got, err := expr.Eval(map[string]any{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), got)
+
+	// 未注册Variable和Function，调用未注册方法
+	expr, err = env.NewExpr("ret(v)")
+	assert.EqualError(t, err, "ERROR: <input>:1:4: undeclared reference to 'ret' (in container '')\n | ret(v)\n | ...^\nERROR: <input>:1:5: undeclared reference to 'v' (in container '')\n | ret(v)\n | ....^")
+	assert.Nil(t, expr)
+
+	// 未注册Variable和注册Function，调用注册方法
+	env, err = env.Extend(Function("ret", Overload("ret_int_int", []*Type{IntType}, IntType, UnaryBinding(func(arg Val) Val {
+		return arg
+	}))))
+	assert.NoError(t, err)
+	assert.NotNil(t, env)
+	expr, err = env.NewExpr("ret(v)")
+	assert.EqualError(t, err, "ERROR: <input>:1:5: undeclared reference to 'v' (in container '')\n | ret(v)\n | ....^")
+	assert.Nil(t, expr)
+
+	// 注册Variable和注册Function，调用注册方法
+	env, err = env.Extend(Variable("v", IntType))
+	assert.NoError(t, err)
+	assert.NotNil(t, env)
+	expr, err = env.NewExpr("ret(v)")
+	assert.NoError(t, err)
+	assert.NotNil(t, expr)
+	got, err = expr.Eval(map[string]any{"v": 3})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), got)
+}

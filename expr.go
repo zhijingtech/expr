@@ -33,6 +33,15 @@ func (e *Env) NewExpr(expression string) (*Expr, error) {
 	return &Expr{p: program}, nil
 }
 
+func (e *Env) Extend(opts ...Option) (*Env, error) {
+	celEnv := (*cel.Env)(e)
+	newEnv, err := celEnv.Extend(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return (*Env)(newEnv), nil
+}
+
 func NewExpr(expression string, options ...Option) (*Expr, error) {
 	env, err := NewEnv(options...)
 	if err != nil {
