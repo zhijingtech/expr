@@ -4,14 +4,20 @@ import (
 	"github.com/google/cel-go/cel"
 )
 
-type Env cel.Env
-type Expr struct {
-	p cel.Program
-}
+type (
+	Env  cel.Env
+	Expr struct {
+		p cel.Program
+	}
+)
 
 // UseThisVariable 注册map类型的this变量，方便在表达式中操作this数据
 func UseThisVariable() Option {
 	return cel.Variable("this", cel.MapType(cel.StringType, cel.AnyType))
+}
+
+func WrapThisVariable(this map[string]any) map[string]any {
+	return map[string]any{"this": this}
 }
 
 func NewEnv(opts ...Option) (*Env, error) {

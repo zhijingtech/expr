@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/zhijingtech/expr/testdata"
 )
 

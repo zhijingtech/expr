@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/zhijingtech/expr/testdata"
 )
 
@@ -20,20 +21,6 @@ func TestExpr_Eval(t *testing.T) {
 		want       any
 		wantErr    string
 	}{
-		{
-			name:       "expr on map return true",
-			expression: "this.value == 1",
-			options:    []Option{UseThisVariable()},
-			input:      map[string]any{"this": map[string]any{"value": 1}},
-			want:       true,
-		},
-		{
-			name:       "expr on map return false",
-			expression: "this.value == 1",
-			options:    []Option{UseThisVariable()},
-			input:      map[string]any{"this": map[string]any{"value": 2}},
-			want:       false,
-		},
 		{
 			name:       "expr on struct return true",
 			expression: "(this.P2.X-this.P1.X) > 1.0",
@@ -86,7 +73,8 @@ func TestExpr_Eval(t *testing.T) {
 						} else {
 							return Double(-dis)
 						}
-					})))},
+					}))),
+			},
 			input: map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
 			want:  true,
 		},
@@ -104,7 +92,8 @@ func TestExpr_Eval(t *testing.T) {
 							dis = -dis
 						}
 						return Double(dis)
-					})))},
+					}))),
+			},
 			input: map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
 			want:  false,
 		},
@@ -116,7 +105,8 @@ func TestExpr_Eval(t *testing.T) {
 				Function("distance",
 					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
 						panic("this is panic")
-					})))},
+					}))),
+			},
 			input:   map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
 			want:    false,
 			wantErr: "internal error: this is panic",
@@ -129,7 +119,8 @@ func TestExpr_Eval(t *testing.T) {
 				Function("distance",
 					Overload("distance_d_d_d", []*Type{DoubleType, DoubleType}, DoubleType, BinaryBinding(func(arg1, arg2 Val) Val {
 						return NewErr("this is error")
-					})))},
+					}))),
+			},
 			input:   map[string]any{"this": map[string]any{"X": 3.0, "Y": 3.5}},
 			want:    false,
 			wantErr: "this is error",
@@ -168,7 +159,8 @@ func TestExpr_Eval(t *testing.T) {
 						UnaryBinding(func(arg Val) Val {
 							v, _ := arg.Value().([]*testdata.Point)
 							return Int(len(v))
-						})))},
+						}))),
+			},
 			input: map[string]any{"this": map[string]any{"items": []*testdata.Point{{X: 1, Y: 2}, {X: 3, Y: 4}}}},
 			want:  true,
 		},
@@ -188,6 +180,85 @@ func TestExpr_Eval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExpr_EvalMap(t *testing.T) {
+	tests := []struct {
+		name       string
+		expression string
+		input      map[string]any
+		want       any
+		wantErr    string
+	}{
+		{
+			name:       "expr on map check int return true",
+			expression: "this.value == 1",
+			input:      map[string]any{"value": 1},
+			want:       true,
+		},
+		{
+			name:       "expr on map check int return false",
+			expression: "this.value == 1",
+			input:      map[string]any{"value": 2},
+			want:       false,
+		},
+		{
+			name:       "expr on map check string return true",
+			expression: "this.value !=\"\"",
+			input:      map[string]any{"value": "1"},
+			want:       true,
+		},
+		{
+			name:       "expr on map check string return false 1",
+			expression: "this.value !=\"\"",
+			input:      map[string]any{"value": ""},
+			want:       false,
+		},
+	}
+
+	options := []Option{UseThisVariable()}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, err := NewExpr(tt.expression, options...)
+			assert.NoError(t, err)
+			got, err := e.Eval(WrapThisVariable(tt.input))
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			} else {
+				assert.EqualError(t, err, tt.wantErr)
+				assert.Nil(t, got)
+			}
+		})
+	}
+}
+
+func TestExpr_EvalReturnAny(t *testing.T) {
+	options := []Option{UseThisVariable()}
+	e, err := NewExpr("this.value", options...)
+	assert.NoError(t, err)
+
+	input := map[string]any{"this": map[string]any{"value": 1}}
+	got, err := e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), got)
+
+	input = map[string]any{"this": map[string]any{"value": "1"}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", got)
+
+	e, err = NewExpr("2+this.value/100", options...)
+	assert.NoError(t, err)
+	input = map[string]any{"this": map[string]any{"value": 1}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), got)
+
+	input = map[string]any{"this": map[string]any{"value": 301}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5), got)
 }
 
 func TestExpr_NewExpr_Err(t *testing.T) {
@@ -269,7 +340,8 @@ func TestExpr_ContextEval(t *testing.T) {
 				t := arg.(Int).Value().(int)
 				time.Sleep(time.Millisecond * time.Duration(t))
 				return nil
-			})))}
+			}))),
+	}
 
 	env, err := NewEnv(options...)
 	assert.NoError(t, err)

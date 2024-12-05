@@ -67,6 +67,53 @@ linters-settings:
     require-explanation: false # don't require an explanation for nolint directives
     require-specific: false # don't require nolint directives to be specific about which linter is being skipped
 
+  depguard:
+    # Rules to apply.
+    #
+    # Variables:
+    # - File Variables
+    #   you can still use and exclamation mark ! in front of a variable to say not to use it.
+    #   Example !$test will match any file that is not a go test file.
+    #
+    #   `$all` - matches all go files
+    #   `$test` - matches all go test files
+    #
+    # - Package Variables
+    #
+    #  `$gostd` - matches all of go's standard library (Pulled from `GOROOT`)
+    #
+    # Default: Only allow $gostd in all files.
+    rules:
+      # Name of a rule.
+      main:
+        # Used to determine the package matching priority.
+        # There are three different modes: `original`, `strict`, and `lax`.
+        # Default: "original"
+        list-mode: lax
+        # List of file globs that will match this list of settings to compare against.
+        # Default: $all
+        files:
+          - "$all"
+        # List of allowed packages.
+        # allow:
+        #   - $gostd
+        #   - github.com/go-kratos
+        # Packages that are not allowed where the value is a suggestion.
+        deny:
+          - pkg: "github.com/sirupsen/logrus"
+            desc: not allowed
+          - pkg: "reflect"
+            desc: not allowed
+          - pkg: "errors"
+            desc: Should be replaced by github.com/pkg/errors
+      # biz:
+      #   list-mode: lax
+      #   files:
+      #    - "**/internal/biz/*.go"
+      #   deny:
+      #     - pkg: "basic-rule/api"
+      #       desc: 领域层禁止使用DTO模型，请用例自己定义领域模型
+
 linters:
   disable-all: true
   enable:
@@ -75,7 +122,7 @@ linters:
     - dogsled
     # - dupl ## TODO: 启用
     - errcheck
-    - exportloopref
+    - copyloopvar
     # - funlen ## TODO: 启用
     # - gochecknoinits
     # - goconst  ## TODO: 启用
@@ -113,7 +160,6 @@ linters:
     # - wrapcheck ## TODO: 启用
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     - path: _test\.go
       linters:
@@ -122,9 +168,3 @@ issues:
 run:
   timeout: 5m
   tests: false
-  go: "1.17" # TODO(ldez): we force to use an old version of Go for the CI and the tests.
-  skip-dirs:
-    - test
-    - docs
-    - cmd/gen
-    - util/template/otpl
