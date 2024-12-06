@@ -261,6 +261,47 @@ func TestExpr_EvalReturnAny(t *testing.T) {
 	assert.Equal(t, int64(5), got)
 }
 
+func TestExpr_EvalDyn(t *testing.T) {
+	options := []Option{UseThisVariable()}
+	e, err := NewExpr("1.0 < 2", options...)
+	assert.EqualError(t, err, "ERROR: <input>:1:5: found no matching overload for '_<_' applied to '(double, int)'\n | 1.0 < 2\n | ....^")
+	assert.Nil(t, e)
+
+	e, err = NewExpr("dyn(1.0) < 2", options...)
+	assert.NoError(t, err)
+	input := map[string]any{}
+	got, err := e.Eval(input)
+	assert.NoError(t, err)
+	assert.True(t, got.(bool))
+}
+
+func TestExpr_EvalMissingKey(t *testing.T) {
+	options := []Option{UseThisVariable()}
+	e, err := NewExpr("this.v1 > 0", options...)
+	assert.NoError(t, err)
+	input := map[string]any{}
+	got, err := e.Eval(input)
+	assert.EqualError(t, err, "no such attribute(s): this")
+	assert.Nil(t, got)
+
+	input = map[string]any{"this": map[string]any{}}
+	got, err = e.Eval(input)
+	assert.EqualError(t, err, "no such key: v1")
+	assert.Nil(t, got)
+
+	e, err = NewExpr("has(this.v1) && this.v1 > 0", options...)
+	assert.NoError(t, err)
+	input = map[string]any{"this": map[string]any{}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.False(t, got.(bool))
+
+	input = map[string]any{"this": map[string]any{"v1": 1}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.True(t, got.(bool))
+}
+
 func TestExpr_NewExpr_Err(t *testing.T) {
 	tests := []struct {
 		name       string

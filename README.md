@@ -56,6 +56,42 @@ expr, err := NewExpr("shake_hands(i,you)",
 	fmt.Println("result:", result)
 	// result: CEL and world are shaking hands.
 ```
+
+内置的函数（macro）如下:
+
+**has**
+- **用途**：用于测试某个字段是否存在，避免需要将字段指定为字符串。
+   - **用法举例**：`has(m.f)`
+     - 如果对象 `m` 具有字段 `f`，则返回 `true`，否则返回 `false`。
+
+**all**
+- **用途**：将 `range.all(var, predicate)` 转换为一个理解式，确保范围内的所有元素都满足谓词条件。
+   - **用法举例**：`range.all(x, x > 0)`
+     - 如果范围内的所有元素都大于 0，则返回 `true`。
+
+**exists**
+- **用途**：将 `range.exists(var, predicate)` 转换为一个理解式，确保范围内至少有一个元素满足谓词条件。
+   - **用法举例**：`range.exists(x, x > 0)`
+     - 如果范围内至少有一个元素大于 0，则返回 `true`。
+
+**existsOne**
+- **用途**：将 `range.existsOne(var, predicate)` 转换为一个表达式，确保范围内恰好有一个元素满足谓词条件。
+   - **用法举例**：`range.existsOne(x, x == 1)`
+     - 如果范围内恰好有一个元素等于 1，则返回 `true`。
+
+**map**
+- **用途一**：将 `range.map(var, function)` 转换为一个理解式，对范围内的每个元素应用函数，生成一个新列表。
+   - **用法举例**：`range.map(x, x * 2)`
+     - 将范围内的每个元素乘以 2，并返回新列表。
+- **用途二**：将 `range.map(var, predicate, function)` 转换为一个理解式，首先通过谓词过滤范围内的元素，然后应用转换函数生成一个新列表。
+   - **用法举例**：`range.map(x, x > 0, x * 2)`
+     - 过滤出大于 0 的元素，然后将这些元素乘以 2，并返回新列表。
+
+**filter**
+- **用途**：将 `range.filter(var, predicate)` 转换为一个理解式，过滤范围内的元素，生成一个满足谓词条件的新列表。
+   - **用法举例**：`range.filter(x, x > 0)`
+     - 返回一个新列表，其中包含范围内所有大于 0 的元素。
+
 ## 欢迎贡献
 
 项目刚拉起，欢迎向 https://github.com/zhijingtech/expr 提交问题或者PR。
