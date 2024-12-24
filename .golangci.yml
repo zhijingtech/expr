@@ -102,10 +102,6 @@ linters-settings:
         deny:
           - pkg: "github.com/sirupsen/logrus"
             desc: not allowed
-          - pkg: "reflect"
-            desc: not allowed
-          - pkg: "errors"
-            desc: Should be replaced by github.com/pkg/errors
       # biz:
       #   list-mode: lax
       #   files:

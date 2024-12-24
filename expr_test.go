@@ -168,9 +168,11 @@ func TestExpr_Eval(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e, err := NewExpr(tt.expression, tt.options...)
+			env, err := NewEnv(tt.options...)
 			assert.NoError(t, err)
-			got, err := e.Eval(tt.input)
+			ex, err := NewExpr(tt.expression, env)
+			assert.NoError(t, err)
+			got, err := ex.Eval(tt.input)
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
@@ -216,12 +218,11 @@ func TestExpr_EvalMap(t *testing.T) {
 		},
 	}
 
-	options := []Option{UseThisVariable()}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e, err := NewExpr(tt.expression, options...)
+			ex, err := NewExpr(tt.expression)
 			assert.NoError(t, err)
-			got, err := e.Eval(WrapThisVariable(tt.input))
+			got, err := ex.Eval(WrapThisVariable(tt.input))
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
@@ -234,8 +235,7 @@ func TestExpr_EvalMap(t *testing.T) {
 }
 
 func TestExpr_EvalReturnAny(t *testing.T) {
-	options := []Option{UseThisVariable()}
-	e, err := NewExpr("this.value", options...)
+	e, err := NewExpr("this.value")
 	assert.NoError(t, err)
 
 	input := map[string]any{"this": map[string]any{"value": 1}}
@@ -248,7 +248,17 @@ func TestExpr_EvalReturnAny(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "1", got)
 
-	e, err = NewExpr("2+this.value/100", options...)
+	input = map[string]any{"this": map[string]any{"value": []int{1, 2}}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, []int([]int{1, 2}), got)
+
+	input = map[string]any{"this": map[string]any{"value": map[int]int{1: 1, 2: 2}}}
+	got, err = e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, map[int]int{1: 1, 2: 2}, got)
+
+	e, err = NewExpr("2+this.value/100")
 	assert.NoError(t, err)
 	input = map[string]any{"this": map[string]any{"value": 1}}
 	got, err = e.Eval(input)
@@ -261,13 +271,31 @@ func TestExpr_EvalReturnAny(t *testing.T) {
 	assert.Equal(t, int64(5), got)
 }
 
+func TestExpr_EvalCustomStruct(t *testing.T) {
+	options := []Option{
+		Types(&testdata.Rectangle{}),
+		Variable("this", MapType(StringType, AnyType)), // ObjectType("testdata.Rectangle")
+	}
+	env, err := NewEnv(options...)
+	assert.NoError(t, err)
+	e, err := NewExpr("this.level.rect", env)
+	assert.NoError(t, err)
+	input := map[string]any{"this": map[string]any{
+		"level": map[string]any{
+			"rect": &testdata.Rectangle{P1: &testdata.Point{X: 1, Y: 2}},
+		},
+	}}
+	got, err := e.Eval(input)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1), got.(*testdata.Rectangle).P1.X)
+}
+
 func TestExpr_EvalDyn(t *testing.T) {
-	options := []Option{UseThisVariable()}
-	e, err := NewExpr("1.0 < 2", options...)
+	e, err := NewExpr("1.0 < 2")
 	assert.EqualError(t, err, "ERROR: <input>:1:5: found no matching overload for '_<_' applied to '(double, int)'\n | 1.0 < 2\n | ....^")
 	assert.Nil(t, e)
 
-	e, err = NewExpr("dyn(1.0) < 2", options...)
+	e, err = NewExpr("dyn(1.0) < 2")
 	assert.NoError(t, err)
 	input := map[string]any{}
 	got, err := e.Eval(input)
@@ -276,8 +304,7 @@ func TestExpr_EvalDyn(t *testing.T) {
 }
 
 func TestExpr_EvalMissingKey(t *testing.T) {
-	options := []Option{UseThisVariable()}
-	e, err := NewExpr("this.v1 > 0", options...)
+	e, err := NewExpr("this.v1 > 0")
 	assert.NoError(t, err)
 	input := map[string]any{}
 	got, err := e.Eval(input)
@@ -289,49 +316,67 @@ func TestExpr_EvalMissingKey(t *testing.T) {
 	assert.EqualError(t, err, "no such key: v1")
 	assert.Nil(t, got)
 
-	e, err = NewExpr("has(this.v1) && this.v1 > 0", options...)
+	e, err = NewExpr("has(this.v1) && this.v1 > 0")
 	assert.NoError(t, err)
 	input = map[string]any{"this": map[string]any{}}
 	got, err = e.Eval(input)
 	assert.NoError(t, err)
-	assert.False(t, got.(bool))
+	assert.Equal(t, false, got)
 
 	input = map[string]any{"this": map[string]any{"v1": 1}}
 	got, err = e.Eval(input)
 	assert.NoError(t, err)
-	assert.True(t, got.(bool))
+	assert.Equal(t, true, got)
+}
+
+func TestExpr_EvalJson(t *testing.T) {
+	e, err := NewExpr(`{"a":this.a}`)
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+
+	input := map[string]any{"this": map[string]any{"a": map[string]any{"b": 1}}}
+	got, err := e.Eval(input, ToMapStringAny)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any(map[string]any{"a": map[string]any{"b": 1}}), got)
+}
+
+func TestExpr_EvalMicro(t *testing.T) {
+	e, err := NewExpr(`this.array.filter(x, x > 1)`)
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+
+	input := map[string]any{"this": map[string]any{"array": []int{1, 2, 3}}}
+	got, err := e.Eval(input, ToSliceInt)
+	assert.NoError(t, err)
+	assert.Equal(t, []int{2, 3}, got)
 }
 
 func TestExpr_NewExpr_Err(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
-		options    []Option
 		wantErr    string
 	}{
 		{
 			name:       "variable not exist",
 			expression: "dummy == 1",
-			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:1: undeclared reference to 'dummy' (in container '')\n | dummy == 1\n | ^",
 		},
 		{
 			name:       "expr wrong",
 			expression: "dummy === 1",
-			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:9: Syntax error: token recognition error at: '= '\n | dummy === 1\n | ........^",
 		},
 		// 自定义函数
 		{
 			name:       "function not exist",
 			expression: "dummy(this.A)",
-			options:    []Option{UseThisVariable()},
 			wantErr:    "ERROR: <input>:1:6: undeclared reference to 'dummy' (in container '')\n | dummy(this.A)\n | .....^",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e, err := NewExpr(tt.expression, tt.options...)
+			e, err := NewExpr(tt.expression)
 			assert.Nil(t, e)
 			assert.Equal(t, tt.wantErr, err.Error())
 		})
@@ -349,21 +394,19 @@ func TestExpr_Eval_Err(t *testing.T) {
 		{
 			name:       "this not exist",
 			expression: "this.dummy == 1",
-			options:    []Option{UseThisVariable()},
 			input:      map[string]any{},
 			wantErr:    "no such attribute(s): this",
 		},
 		{
 			name:       "variable not exist",
 			expression: "this.dummy == 1",
-			options:    []Option{UseThisVariable()},
 			input:      map[string]any{"this": map[string]any{"value": 1}},
 			wantErr:    "no such key: dummy",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e, err := NewExpr(tt.expression, tt.options...)
+			e, err := NewExpr(tt.expression)
 			assert.NoError(t, err)
 
 			got, err := e.Eval(tt.input)
@@ -387,7 +430,7 @@ func TestExpr_ContextEval(t *testing.T) {
 	env, err := NewEnv(options...)
 	assert.NoError(t, err)
 
-	expr1, err := env.NewExpr("this.milliseconds")
+	expr1, err := NewExpr("this.milliseconds", env)
 	assert.NoError(t, err)
 	assert.NotNil(t, expr1)
 	got, err := expr1.Eval(map[string]any{"this": map[string]any{"milliseconds": 200}})
@@ -410,7 +453,7 @@ func TestEnv_Extend(t *testing.T) {
 	assert.NotNil(t, env)
 
 	// 未注册Variable和Function，基础计算
-	expr, err := env.NewExpr("1 + 2")
+	expr, err := NewExpr("1 + 2", env)
 	assert.NoError(t, err)
 	assert.NotNil(t, expr)
 	got, err := expr.Eval(map[string]any{})
@@ -418,7 +461,7 @@ func TestEnv_Extend(t *testing.T) {
 	assert.Equal(t, int64(3), got)
 
 	// 未注册Variable和Function，调用未注册方法
-	expr, err = env.NewExpr("ret(v)")
+	expr, err = NewExpr("ret(v)", env)
 	assert.EqualError(t, err, "ERROR: <input>:1:4: undeclared reference to 'ret' (in container '')\n | ret(v)\n | ...^\nERROR: <input>:1:5: undeclared reference to 'v' (in container '')\n | ret(v)\n | ....^")
 	assert.Nil(t, expr)
 
@@ -428,7 +471,7 @@ func TestEnv_Extend(t *testing.T) {
 	}))))
 	assert.NoError(t, err)
 	assert.NotNil(t, env)
-	expr, err = env.NewExpr("ret(v)")
+	expr, err = NewExpr("ret(v)", env)
 	assert.EqualError(t, err, "ERROR: <input>:1:5: undeclared reference to 'v' (in container '')\n | ret(v)\n | ....^")
 	assert.Nil(t, expr)
 
@@ -436,7 +479,7 @@ func TestEnv_Extend(t *testing.T) {
 	env, err = env.Extend(Variable("v", IntType))
 	assert.NoError(t, err)
 	assert.NotNil(t, env)
-	expr, err = env.NewExpr("ret(v)")
+	expr, err = NewExpr("ret(v)", env)
 	assert.NoError(t, err)
 	assert.NotNil(t, expr)
 	got, err = expr.Eval(map[string]any{"v": 3})
