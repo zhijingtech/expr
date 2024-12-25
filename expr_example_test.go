@@ -6,13 +6,12 @@ import (
 )
 
 func TestExampleExprWithMap(t *testing.T) {
-	expr, err := NewExpr("this.value > 60", UseThisVariable())
+	expr, err := NewExpr("this.value > 60")
 	if err != nil {
 		panic(err)
 	}
 
 	result, err := expr.Eval(map[string]any{"this": map[string]any{"value": 50}})
-
 	if err != nil {
 		panic(err)
 	}
@@ -22,7 +21,7 @@ func TestExampleExprWithMap(t *testing.T) {
 }
 
 func TestExampleExprWithFunc(t *testing.T) {
-	expr, err := NewExpr("shake_hands(i,you)",
+	env, err := NewEnv(
 		Variable("i", StringType),
 		Variable("you", StringType),
 		Function("shake_hands",
@@ -32,6 +31,10 @@ func TestExampleExprWithFunc(t *testing.T) {
 				}),
 			),
 		))
+	if err != nil {
+		panic(err)
+	}
+	expr, err := NewExpr("shake_hands(i,you)", env)
 	if err != nil {
 		panic(err)
 	}

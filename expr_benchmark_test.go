@@ -16,17 +16,19 @@ const (
 //go:generate protoc -I=. --go_out=. testdata/model.proto
 
 func BenchmarkCelGoMap(b *testing.B) {
-	expr, err := NewExpr(exprstr,
+	env, err := NewEnv(
 		cel.Variable("current", cel.MapType(cel.StringType, cel.AnyType)),
 		cel.Variable("prev", cel.MapType(cel.StringType, cel.AnyType)),
 	)
 	assert.NoError(b, err)
+	expr, err := NewExpr(exprstr, env)
+	assert.NoError(b, err)
 
-	var prevMap = map[string]any{
+	prevMap := map[string]any{
 		"P1": map[string]any{"X": 1, "Y": 2},
 		"P2": map[string]any{"X": 3, "Y": 4},
 	}
-	var currentMap = map[string]any{
+	currentMap := map[string]any{
 		"P1": map[string]any{"X": 5, "Y": 3},
 		"P2": map[string]any{"X": 7, "Y": 5},
 	}
@@ -39,23 +41,25 @@ func BenchmarkCelGoMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result, err := expr.Eval(iparams)
 		assert.NoError(b, err)
-		assert.True(b, result.(bool))
+		assert.Equal(b, true, result)
 	}
 }
 
 func BenchmarkCelGoProtoBuf(b *testing.B) {
-	expr, err := NewExpr(exprstr,
+	env, err := NewEnv(
 		cel.Types(&testdata.Rectangle{}),
 		cel.Variable("prev", cel.ObjectType("testdata.Rectangle")),
 		cel.Variable("current", cel.ObjectType("testdata.Rectangle")),
 	)
 	assert.NoError(b, err)
+	expr, err := NewExpr(exprstr, env)
+	assert.NoError(b, err)
 
-	var prev = &testdata.Rectangle{
+	prev := &testdata.Rectangle{
 		P1: &testdata.Point{X: 1, Y: 2},
 		P2: &testdata.Point{X: 3, Y: 4},
 	}
-	var current = &testdata.Rectangle{
+	current := &testdata.Rectangle{
 		P1: &testdata.Point{X: 5, Y: 3},
 		P2: &testdata.Point{X: 7, Y: 5},
 	}
@@ -68,6 +72,6 @@ func BenchmarkCelGoProtoBuf(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		result, err := expr.Eval(iparams)
 		assert.NoError(b, err)
-		assert.True(b, result.(bool))
+		assert.Equal(b, true, result)
 	}
 }
