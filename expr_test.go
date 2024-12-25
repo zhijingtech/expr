@@ -2,6 +2,7 @@ package expr
 
 import (
 	"math"
+	"reflect"
 	"testing"
 	"time"
 
@@ -234,7 +235,7 @@ func TestExpr_EvalMap(t *testing.T) {
 	}
 }
 
-func TestExpr_EvalReturnAny(t *testing.T) {
+func TestExpr_EvalAny(t *testing.T) {
 	e, err := NewExpr("this.value")
 	assert.NoError(t, err)
 
@@ -257,6 +258,18 @@ func TestExpr_EvalReturnAny(t *testing.T) {
 	got, err = e.Eval(input)
 	assert.NoError(t, err)
 	assert.Equal(t, map[int]int{1: 1, 2: 2}, got)
+
+	input = map[string]any{"this": map[string]any{"value": []int{1, 2}}}
+	got, err = e.Eval(input, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, []int([]int{1, 2}), got)
+	got, err = e.Eval(input, reflect.Type(nil))
+	assert.NoError(t, err)
+	assert.Equal(t, []int([]int{1, 2}), got)
+	got, err = e.Eval(input, ToSliceInt)
+	assert.NoError(t, err)
+	assert.Equal(t, []int([]int{1, 2}), got)
+	//--
 
 	e, err = NewExpr("2+this.value/100")
 	assert.NoError(t, err)

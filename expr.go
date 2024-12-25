@@ -74,7 +74,7 @@ func (e *Expr) Eval(input any, convertType ...reflect.Type) (any, error) {
 	if ev == nil || err != nil {
 		return nil, err
 	}
-	if len(convertType) == 0 {
+	if len(convertType) == 0 || convertType[0] == nil {
 		return ev.Value(), nil
 	}
 	return ev.ConvertToNative(convertType[0])
